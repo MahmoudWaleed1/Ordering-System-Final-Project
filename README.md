@@ -1,4 +1,4 @@
-# 🍽️ Ordering System – Final Project
+# 📦 Ordering System – Final Project
 
 This repository contains the **final ordering system web project**, developed using a **React frontend** and a **Flask backend**.
 
@@ -36,5 +36,5 @@ Use the following prefixes for commits:
 
 The project is divided into **Frontend** and **Backend**, each in a separate folder:
 
-#### TBD
+#### TBC
 
