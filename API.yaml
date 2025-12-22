@@ -1,0 +1,45 @@
+openapi: 3.0.3
+info:
+  title: Ordering System API
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:5000
+
+paths:
+
+  /api/users/login:
+    post:
+      operationId: "users.login"
+      tags:
+        - "Users"
+      summary: "User login"
+      responses:
+        "200":
+          description: | 
+            Login successful
+            Returns authenticated user info including role (e.g. user, admin).
+        "401":
+          description: "Invalid credentials"
+
+  /api/users/register:
+    post:
+      operationId: "users.register"
+      tags:
+        - "Users"
+      summary: "Register a new user"
+      responses:
+        "201":
+          description: "User registered"
+
+  /api/users/me:
+    get:
+      operationId: "users.me"
+      tags:
+        - "Users"
+      summary: "Get current logged-in user"
+      responses:
+        "200":
+          description: "User profile including access role."
+        "401":
+          description: "Unauthorized"
