@@ -63,6 +63,8 @@ The project is divided into **Frontend** and **Backend**, each in a separate fol
 -   All endpoints must follow **REST conventions**:
     
     -   GET `/api/feature/` → list all items
+ 
+    -   GET `/api/feature/<id>` → get an item
         
     -   POST `/api/feature/` → create an item
         
