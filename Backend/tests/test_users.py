@@ -2,6 +2,7 @@ import pytest
 from app import create_app
 from config import TestConfig
 from db.db_connection import get_db
+from config import *
 
 @pytest.fixture
 def client():
@@ -33,7 +34,7 @@ def test_register_and_login(client):
         "username": "alice",
         "password": "1234"
     })
-    assert rv.status_code == 201
+    assert rv.status_code == HTTP_201_CREATED
     user_id = rv.get_json()["user_id"]
 
     # Login
@@ -41,7 +42,7 @@ def test_register_and_login(client):
         "username": "alice",
         "password": "1234"
     })
-    assert rv.status_code == 200
+    assert rv.status_code == HTTP_200_OK
     data = rv.get_json()
     assert "access_token" in data
 
@@ -51,7 +52,7 @@ def test_register_and_login(client):
     rv = client.get("/api/users/me", headers={
         "Authorization": f"Bearer {token}"
     })
-    assert rv.status_code == 200
+    assert rv.status_code == HTTP_200_OK
     profile = rv.get_json()
     assert profile["username"] == "alice"
 
@@ -61,28 +62,28 @@ def test_register_and_login(client):
         "username": "alice",
         "password": "1234"
     })
-    assert rv.status_code == 409
+    assert rv.status_code == HTTP_409_CONFLICT
 
     # Login with wrong password
     rv = client.post("/api/users/login", json={
         "username": "alice",
         "password": "wrongpass"
     })
-    assert rv.status_code == 401
+    assert rv.status_code == HTTP_401_UNAUTHORIZED
 
     # Login with nonexistent username
     rv = client.post("/api/users/login", json={
         "username": "bob",
         "password": "1234"
     })
-    assert rv.status_code == 401
+    assert rv.status_code == HTTP_401_UNAUTHORIZED
 
     # /me without token
     rv = client.get("/api/users/me")
-    assert rv.status_code == 401
+    assert rv.status_code == HTTP_401_UNAUTHORIZED
 
     # /me with invalid token
     rv = client.get("/api/users/me", headers={
         "Authorization": "Bearer invalidtoken123"
     })
-    assert rv.status_code == 422
+    assert rv.status_code == HTTP_422_INVALID_TOKEN
