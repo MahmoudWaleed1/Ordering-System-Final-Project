@@ -6,12 +6,16 @@ from auth.tokens import generate_access_token
 from auth.decorators import admin_required
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from mysql.connector import IntegrityError
+import bcrypt
+
 
 @users_bp.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
     user = get_user_by_username(data["username"])
-    if not user or user["password"] != data["password"]:
+    password = data.get("password")
+
+    if not user or not bcrypt.checkpw(password.encode('utf-8'), user["password"].encode('utf-8')):
         return jsonify({"msg": "Invalid credentials"}), HTTP_401_UNAUTHORIZED
 
     token = generate_access_token(user["id"], user["role"])
@@ -20,8 +24,16 @@ def login():
 @users_bp.route("/register", methods=["POST"])
 def register():
     data = request.get_json()
+    username = data.get("username")
+    password = data.get("password")
+
+    if not username or not password:
+        return {"msg": "Missing username or password"}, 400
+
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
     try:
-        user_id = create_user(data["username"], data["password"])
+        user_id = create_user(username, hashed_password)
     except IntegrityError:
         return {"msg": "Username already exists"}, HTTP_409_CONFLICT
     
