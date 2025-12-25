@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream
-=======
 from . import users_bp
 from config import *
 from flask import Blueprint, request, jsonify
@@ -59,4 +57,3 @@ def me():
         return {"msg": "User not found"}, HTTP_404_NOT_FOUND
     return user
 
->>>>>>> Stashed changes
