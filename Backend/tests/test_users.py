@@ -13,17 +13,12 @@ def client():
 
 @pytest.fixture(autouse=True)
 def clean_db():
-    from app import create_app
-    from config import TestConfig
-    from db.db_connection import get_db
-
     app = create_app(TestConfig)
-
-    with app.app_context():  # <<< ensures g is available
+    with app.app_context():
         db = get_db()
         cursor = db.cursor()
         cursor.execute("SET FOREIGN_KEY_CHECKS=0;")
-        cursor.execute("TRUNCATE TABLE users")
+        cursor.execute("TRUNCATE TABLE user")  # Updated table name
         cursor.execute("SET FOREIGN_KEY_CHECKS=1;")
         db.commit()
 
@@ -32,7 +27,13 @@ def test_register_and_login(client):
     # Register
     rv = client.post("/api/users/register", json={
         "username": "alice",
-        "password": "1234"
+        "password": "1234",
+        "email": "alice@example.com",
+        "first_name": "Alice",
+        "last_name": "Smith",
+        "role": "Customer",
+        "shipping_address": "123 Main St",
+        "phone_number": "0123456789"
     })
     assert rv.status_code == HTTP_201_CREATED
     user_id = rv.get_json()["user_id"]
@@ -55,12 +56,16 @@ def test_register_and_login(client):
     assert rv.status_code == HTTP_200_OK
     profile = rv.get_json()
     assert profile["username"] == "alice"
+    assert profile["email"] == "alice@example.com"
 
     # --- Negative tests ---
     # Register with existing username
     rv = client.post("/api/users/register", json={
         "username": "alice",
-        "password": "1234"
+        "password": "1234",
+        "email": "alice@example.com",
+        "first_name": "Alice",
+        "last_name": "Smith"
     })
     assert rv.status_code == HTTP_409_CONFLICT
 
