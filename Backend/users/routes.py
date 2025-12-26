@@ -45,8 +45,8 @@ def register():
         user_id = create_user(username, hashed_password, role, shipping_address, phone_number, email, first_name, last_name)
     except IntegrityError:
         return {"msg": "Username already exists"}, HTTP_409_CONFLICT
-    
-    return jsonify({"user_id": user_id}), HTTP_201_CREATED
+
+    return jsonify({"message": "success"}), HTTP_201_CREATED
 
 @users_bp.route("/me", methods=["GET"])
 @jwt_required()
