@@ -19,6 +19,8 @@ paths:
           description: | 
             Login successful
             Returns authenticated user info including role (e.g. user, admin).
+        "400":
+          description: "Missing or malformed request body"
         "401":
           description: "Invalid credentials"
 
@@ -31,6 +33,10 @@ paths:
       responses:
         "201":
           description: "User registered"
+        "400":
+          description: "Invalid input data"
+        "409":
+          description: "Username already exists"
 
   /api/users/me:
     get:
@@ -43,3 +49,5 @@ paths:
           description: "User profile including access role."
         "401":
           description: "Unauthorized"
+        "422":
+          description: "Invalid or malformed JWT token"
