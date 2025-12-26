@@ -30,8 +30,12 @@ def register():
     shipping_address = data.get("shipping_address")
     phone_number = data.get("phone_number")
     email = data.get("email")
-    first_name = data.get("first_name")
-    last_name = data.get("last_name")
+    name = data.get("name", "").strip()
+    parts = name.split()
+    if len(parts) < 2:
+        return jsonify({"error": "Full name must include first and last name"}), 400
+    first_name = parts[0]
+    last_name = " ".join(parts[1:])
 
 
     required_fields = [username, password, email, first_name, last_name]

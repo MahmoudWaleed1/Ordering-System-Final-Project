@@ -1,5 +1,6 @@
 from flask import Flask, render_template, jsonify
 from flask import Flask, g
+from flask_cors import CORS
 from db import db_connection
 from flask_jwt_extended import JWTManager
 from users import users_bp
@@ -8,6 +9,12 @@ jwt = JWTManager()
 
 def create_app(config_class=None):
     app = Flask(__name__)
+    CORS(
+        app,
+        resources={r"/api/*": {"origins": "http://localhost:3000"}},
+        supports_credentials=True
+    )
+    
     if config_class:
         app.config.from_object(config_class)
     else:
