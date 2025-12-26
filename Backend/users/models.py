@@ -30,3 +30,22 @@ def get_user_by_username(username):
     )
     return cursor.fetchone()
 
+def update_user_by_username(username, update_data):
+    if not update_data:
+        return False
+
+    db = get_db()
+    cursor = db.cursor()
+
+    set_clause = ", ".join([f"{key}=%s" for key in update_data.keys()])
+    values = list(update_data.values())
+    values.append(username)
+
+    query = f"UPDATE user SET {set_clause} WHERE username=%s"
+    
+    cursor.execute(query, values)
+    db.commit()
+    
+    return cursor.rowcount > 0
+
+
