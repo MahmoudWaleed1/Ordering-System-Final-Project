@@ -17,6 +17,21 @@ DELIMITER ;
 
 DELIMITER //
 
+CREATE TRIGGER before_book_insert_negative_stock
+BEFORE INSERT ON book
+FOR EACH ROW
+BEGIN
+    IF NEW.quantity_stock < 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Integrity Error: Initial stock quantity cannot be negative.';
+    END IF;
+END;
+//
+
+DELIMITER ;
+
+DELIMITER //
+
 CREATE TRIGGER after_book_update_restock
 AFTER UPDATE ON book
 FOR EACH ROW
