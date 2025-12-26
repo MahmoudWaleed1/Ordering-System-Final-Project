@@ -1,6 +1,6 @@
-CREATE DATABASE Order_Processing_System;
+CREATE DATABASE Book_Order_Processing_System;
 
-USE Order_Processing_System;
+USE Book_Order_Processing_System;
 
 CREATE TABLE user (
     username VARCHAR(225) NOT NULL,
