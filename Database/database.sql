@@ -29,14 +29,14 @@ CREATE TABLE credit_card (
 CREATE TABLE publisher_telephone (
     publisher_id INT NOT NULL,
     telephone_number VARCHAR(20) NOT NULL,
-    FOREIGN KEY (publisher_id) REFERENCES publisher(publisher_id),
+    FOREIGN KEY (publisher_id) REFERENCES publisher(publisher_id) ON DELETE CASCADE ON UPDATE CASCADE,
     PRIMARY KEY (publisher_id, telephone_number)
 );
 
 CREATE TABLE publisher_address (
     publisher_id INT NOT NULL,
     address VARCHAR(255) NOT NULL,
-    FOREIGN KEY (publisher_id) REFERENCES publisher(publisher_id),
+    FOREIGN KEY (publisher_id) REFERENCES publisher(publisher_id) ON DELETE CASCADE ON UPDATE CASCADE,
     PRIMARY KEY (publisher_id, address)
 );
 
@@ -48,16 +48,16 @@ CREATE TABLE book (
     category ENUM('Science', 'Art', 'Religion', 'History', 'Geography') NOT NULL,
     threshold INT NOT NULL,
     selling_price DECIMAL(10, 2) NOT NULL,
-    publisher_id INT NOT NULL,
+    publisher_id INT,
     book_image VARCHAR(255) NOT NULL,
     PRIMARY KEY (ISBN_number),
-    FOREIGN KEY (publisher_id) REFERENCES publisher(publisher_id)
+    FOREIGN KEY (publisher_id) REFERENCES publisher(publisher_id) ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 CREATE TABLE author (
     ISBN_number VARCHAR(20) NOT NULL,
     author_name VARCHAR(255) NOT NULL,
-    FOREIGN KEY (ISBN_number) REFERENCES book(ISBN_number),
+    FOREIGN KEY (ISBN_number) REFERENCES book(ISBN_number) ON DELETE CASCADE ON UPDATE CASCADE,
     PRIMARY KEY (ISBN_number, author_name)
 );
 
@@ -67,8 +67,8 @@ CREATE TABLE publisher_order (
     order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status ENUM('Pending', 'Confirmed') NOT NULL,
     quantity INT NOT NULL,
-    ISBN_number VARCHAR(20) NOT NULL,
-    FOREIGN KEY (ISBN_number) REFERENCES book(ISBN_number),
+    ISBN_number VARCHAR(20),
+    FOREIGN KEY (ISBN_number) REFERENCES book(ISBN_number) ON DELETE SET NULL ON UPDATE CASCADE,
     PRIMARY KEY (order_id)
 );
 
@@ -76,10 +76,10 @@ CREATE TABLE customer_order (
     order_id INT NOT NULL AUTO_INCREMENT,
     order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     cost DECIMAL(10, 2) NOT NULL,
-    credit_card_number VARCHAR(20) NOT NULL,
-    username VARCHAR(225) NOT NULL,
-    FOREIGN KEY (username) REFERENCES user(username),
-    FOREIGN KEY (credit_card_number) REFERENCES credit_card(credit_card_number),
+    credit_card_number VARCHAR(20),
+    username VARCHAR(225),
+    FOREIGN KEY (username) REFERENCES user(username) ON DELETE SET NULL ON UPDATE CASCADE,
+    FOREIGN KEY (credit_card_number) REFERENCES credit_card(credit_card_number) ON DELETE SET NULL ON UPDATE CASCADE,
     PRIMARY KEY (order_id)
 );
 
@@ -89,6 +89,6 @@ CREATE TABLE book_order (
     item_quantity INT NOT NULL,
     unit_price DECIMAL(10, 2) NOT NULL,
     PRIMARY KEY (ISBN_number, order_id),
-    FOREIGN KEY (ISBN_number) REFERENCES book(ISBN_number),
-    FOREIGN KEY (order_id) REFERENCES customer_order(order_id)
+    FOREIGN KEY (ISBN_number) REFERENCES book(ISBN_number) ON DELETE RESTRICT ON UPDATE CASCADE,
+    FOREIGN KEY (order_id) REFERENCES customer_order(order_id) ON DELETE RESTRICT ON UPDATE CASCADE
 );
