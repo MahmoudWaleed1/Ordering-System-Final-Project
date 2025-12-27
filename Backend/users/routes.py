@@ -108,4 +108,24 @@ def update_profile():
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"msg": "Internal Server Error"}), 500
+    
+@users_bp.route("/orders", methods=["POST"])
+@jwt_required()
+def order_books():
+    username = get_jwt_identity()
+    data = request.get_json()
+
+    books = data.get("books")
+    credit_card = data.get("credit_card_number")
+
+
+    if not books or not isinstance(books, list) or not credit_card:
+        return jsonify({"msg": "Missing Arguments"}), HTTP_400_BAD_REQUEST
+
+    try:
+        order_id = create_customer_order(username, credit_card, books)
+    except IntegrityError:
+        return jsonify({"msg": "Invalid Input"}), HTTP_400_BAD_REQUEST
+
+    return jsonify({"msg": "Order placed successfully", "order_id": order_id}), 201
 
