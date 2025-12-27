@@ -1,5 +1,13 @@
 import { Book } from "@/interfaces/book";
 
+const formatImagePath = (imagePath: string) => {
+    if (!imagePath) return "/placeholder-book.jpg"; // Default if missing
+    if (imagePath.startsWith('http') || imagePath.startsWith('/')) {
+        return imagePath;
+    }
+    return `/${imagePath}`; // Adds the leading slash required by Next.js
+};
+
 class ApiService {
     // Uses the variable from your .env file
     #baseUrl: string = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
@@ -54,7 +62,7 @@ class ApiService {
             price: parseFloat(book.selling_price),
             publicationYear: book.publication_year,
             publisher: book.name || book.publisher_name || "",
-            image: book.book_image,
+            image: formatImagePath(book.book_image),
             category: book.category,
             authors: book.authors || [],
             createdAt: "",
@@ -72,12 +80,12 @@ class ApiService {
             price: parseFloat(book.selling_price),
             publicationYear: book.publication_year,
             publisher: book.name || book.publisher_name || "",
-            image: book.book_image,
+            image: formatImagePath(book.book_image),
             category: book.category,
             authors: book.authors || [],
             createdAt: "",
             updatedAt: "",
-        };
+        }; 
     }
 
     async searchBooks(searchParams: {
@@ -105,7 +113,7 @@ class ApiService {
             price: parseFloat(book.selling_price),
             publicationYear: book.publication_year,
             publisher: book.name || book.publisher_name || "",
-            image: book.book_image,
+            image: formatImagePath(book.book_image),
             category: book.category,
             authors: book.authors || [],
             createdAt: "",

@@ -40,7 +40,7 @@ def register():
 
     required_fields = [username, password, email, first_name, last_name]
     if not all(required_fields):
-        return {"msg": "Missing required fields"}, HTTP_400_BAD_REQUEST
+        return jsonify({"msg": "Missing required fields"}), HTTP_400_BAD_REQUEST
 
 
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
