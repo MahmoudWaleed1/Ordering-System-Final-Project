@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: book_order_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${DB_NAME:-Book_Order_Processing_System}
+      MYSQL_USER: ${DB_USER:-bookuser}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-bookpassword}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./Database/database.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./Database/data.sql:/docker-entrypoint-initdb.d/02-data.sql:ro
+      - ./Database/triggers.sql:/docker-entrypoint-initdb.d/03-triggers.sql:ro
+      - ./Database/operations.sql:/docker-entrypoint-initdb.d/04-operations.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - book_order_network
+
+  # Flask Backend API
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: book_order_backend
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_USER: ${DB_USER:-bookuser}
+      DB_PASSWORD: ${DB_PASSWORD:-bookpassword}
+      DB_NAME: ${DB_NAME:-Book_Order_Processing_System}
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-change-in-production}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-jwt-dev-secret-change-in-production}
+      FLASK_ENV: production
+      FLASK_DEBUG: "0"
+    ports:
+      - "${BACKEND_PORT:-5000}:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./Backend:/app
+      - backend_static:/app/static
+    networks:
+      - book_order_network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./Frontend/ordering_system
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:5000}
+    container_name: book_order_frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://backend:5000}
+      AUTH_SECRET: ${AUTH_SECRET:-auth-secret-change-in-production}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-nextauth-secret-change-in-production}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - book_order_network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  db_data:
+    driver: local
+  backend_static:
+    driver: local
+
+networks:
+  book_order_network:
+    driver: bridge
+

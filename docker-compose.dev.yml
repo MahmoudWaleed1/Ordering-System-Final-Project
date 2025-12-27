@@ -1,0 +1,27 @@
+version: '3.8'
+
+# Development Docker Compose - with hot reload and volume mounts
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  backend:
+    environment:
+      FLASK_ENV: development
+      FLASK_DEBUG: "1"
+    volumes:
+      - ./Backend:/app
+      - /app/venv  # Exclude venv from volume mount
+    command: python run.py
+
+  frontend:
+    build:
+      context: ./Frontend/ordering_system
+      dockerfile: Dockerfile.dev
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./Frontend/ordering_system:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+
