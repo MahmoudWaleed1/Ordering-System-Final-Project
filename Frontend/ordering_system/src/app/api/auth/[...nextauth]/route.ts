@@ -27,21 +27,35 @@ const handler = NextAuth({
           return null;
         }
 
-        // Logic to handle different backend response structures
-        // It checks if 'user' is nested or if the data itself is the user
-        const user = res.data.user || res.data;
-        const token = res.data.token;
+        // Backend returns: { access_token: string, role: string }
+        const token = res.data.access_token;
+        const role = res.data.role;
 
-        if (!user) {
+        if (!token) {
           return null;
         }
 
+        // Get user profile to get full user info
+        const profileRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"}/api/users/me`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        });
+
+        let userData: any = {};
+        if (profileRes.ok) {
+          userData = await profileRes.json();
+        }
+
         return {
-          id: user._id ?? user.id,
-          name: user.name,
-          email: user.email,
-          username: user.username,
-          role: user.role ?? "user",
+          id: userData.username || credentials.username,
+          name: userData.first_name && userData.last_name 
+            ? `${userData.first_name} ${userData.last_name}` 
+            : credentials.username,
+          email: userData.email || "",
+          username: userData.username || credentials.username,
+          role: role || userData.role || "Customer",
           token: token, // This passes the token to the JWT callback
         };
       },

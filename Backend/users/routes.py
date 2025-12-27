@@ -1,7 +1,7 @@
 from . import users_bp
 from config import *
 from flask import Blueprint, request, jsonify
-from users.models import get_user_by_username, create_user, update_user_by_username
+from users.models import get_user_by_username, create_user, update_user_by_username, get_user_orders
 from auth.tokens import generate_access_token
 from auth.decorators import admin_required
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -76,12 +76,12 @@ def update_profile():
     }
     updates = {}
 
-    for api_field, db_field in allowed_fields:
+    for api_field, db_field in allowed_fields.items():
         if api_field in data:
             updates[db_field] = data[api_field]
 
     if "old_password" in data and "new_password" in data:
-        user = get_user_by_username(data["username"])
+        user = get_user_by_username(username)
         if not user or not bcrypt.checkpw(data["old_password"].encode('utf-8'), user["password_hash"].encode('utf-8')):
             return jsonify({"msg": "Incorrect Password"}), HTTP_401_UNAUTHORIZED
         updates["password_hash"] = bcrypt.hashpw(data["new_password"].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -108,4 +108,11 @@ def update_profile():
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"msg": "Internal Server Error"}), 500
+
+@users_bp.route("/orders", methods=["GET"])
+@jwt_required()
+def get_orders():
+    username = get_jwt_identity()
+    orders = get_user_orders(username)
+    return jsonify(orders), HTTP_200_OK
 

@@ -3,8 +3,8 @@
 import { Button } from "@/components";
 import { CartBook } from "@/components/books/CartBook";
 import { cartContext } from "@/contexts/cartContext";
+import { cartStorage, CartItem } from "@/helpers/cartStorage";
 import { formatPrice } from "@/helpers/currency";
-import { apiService } from "@/services/api";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -15,76 +15,36 @@ import toast from "react-hot-toast";
 
 export function CartContainer() {
   const { data: session, status } = useSession();
-  const [innerCartData, setInnerCartData] = useState<any | null>(null);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isClearingCart, setIsClearingCart] = useState(false);
   const [isProceedingToCheckout, setIsProceedingToCheckout] = useState(false);
-  const { setCartCount } = useContext(cartContext);
+  const { refreshCart } = useContext(cartContext);
   const router = useRouter();
 
-  const token = (session?.user as any)?.token;
-
   useEffect(() => {
-    async function fetchCart() {
-      if (status === "loading") return;
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const response = await apiService.getLoggedUserCart(token);
-        
-        if (response.ok && response.data) {
-          setInnerCartData(response.data);
-          setCartCount(response.data.numOfCartItems || 0);
-        } else {
-          setInnerCartData(null);
-        }
-      } catch (error) {
-        console.error("Error fetching cart:", error);
-        toast.error("Could not load cart data");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchCart();
-  }, [token, status, setCartCount]);
-
-  async function handleRemoveCartItem(
-    productId: string,
-    setIsRemovingItem: (newState: boolean) => void
-  ) {
-    if (!token) return;
-    setIsRemovingItem(true);
+    if (status === "loading") return;
     
-    try {
-      const response = await apiService.removeSpecificCartItem(productId, token);
-      if (response.status === "success") {
-        toast.success("Book removed successfully");
-        const newCartData = await apiService.getLoggedUserCart(token);
-        setInnerCartData(newCartData.data);
-        setCartCount(newCartData.data.numOfCartItems);
-      }
-    } catch (error) {
-      toast.error("Failed to remove item");
-    } finally {
-      setIsRemovingItem(false);
-    }
+    const items = cartStorage.getCart();
+    setCartItems(items);
+    setLoading(false);
+  }, [status]);
+
+  function handleRemoveCartItem(isbn: string) {
+    cartStorage.removeFromCart(isbn);
+    const items = cartStorage.getCart();
+    setCartItems(items);
+    refreshCart();
+    toast.success("Book removed from cart");
   }
 
-  async function handleClearCart() {
-    if (!token) return;
+  function handleClearCart() {
     setIsClearingCart(true);
     try {
-      const response = await apiService.clearCart(token);
-      if (response.status === "success" || response.message === "success") {
-        toast.success("Cart cleared");
-        setInnerCartData(null);
-        setCartCount(0);
-      }
+      cartStorage.clearCart();
+      setCartItems([]);
+      refreshCart();
+      toast.success("Cart cleared");
     } catch (error) {
       toast.error("Failed to clear cart");
     } finally {
@@ -92,24 +52,25 @@ export function CartContainer() {
     }
   }
 
-  async function handleUpdateCartProductCount(productId: string, count: number) {
-    if (!token) return;
-    try {
-      const response = await apiService.updateCartProductCount(productId, count, token);
-      if (response.status === "success") {
-        const newCartData = await apiService.getLoggedUserCart(token);
-        setInnerCartData(newCartData.data);
-        setCartCount(newCartData.data.numOfCartItems);
-      }
-    } catch (error) {
-      toast.error("Failed to update quantity");
-    }
+  function handleUpdateCartProductCount(isbn: string, count: number) {
+    cartStorage.updateQuantity(isbn, count);
+    const items = cartStorage.getCart();
+    setCartItems(items);
+    refreshCart();
   }
 
   const handleProceedToCheckout = () => {
+    if (!session?.user) {
+      toast.error("Please login to checkout");
+      router.push("/authentication/login");
+      return;
+    }
     setIsProceedingToCheckout(true);
     router.push("/addresses");
   };
+
+  const totalPrice = cartStorage.getTotalPrice();
+  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   if (loading) {
     return (
@@ -120,7 +81,7 @@ export function CartContainer() {
     );
   }
 
-  if (!innerCartData || innerCartData.numOfCartItems === 0) {
+  if (cartItems.length === 0) {
     return (
       <div className="text-center py-20 bg-[#0b1020]/50 rounded-3xl border border-indigo-900/50">
         <h2 className="text-2xl font-semibold text-indigo-100 mb-4">
@@ -139,16 +100,16 @@ export function CartContainer() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-2">Shopping Cart</h1>
         <p className="text-indigo-300">
-          You have {innerCartData.numOfCartItems} book{innerCartData.numOfCartItems !== 1 ? "s" : ""} reserved.
+          You have {totalItems} book{totalItems !== 1 ? "s" : ""} in your cart.
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2 space-y-4">
           <div className="space-y-4">
-            {innerCartData.products?.map((item: any) => (
+            {cartItems.map((item) => (
               <CartBook
-                key={item.book.isbn || item._id}
+                key={item.book.isbn || item.book.ISBN_number}
                 item={item}
                 onRemoveItem={handleRemoveCartItem}
                 onUpdateItemCount={handleUpdateCartProductCount}
@@ -179,8 +140,8 @@ export function CartContainer() {
             
             <div className="space-y-4 mb-6">
               <div className="flex justify-between text-indigo-200">
-                <span>Subtotal ({innerCartData.numOfCartItems} items)</span>
-                <span>{formatPrice(innerCartData.totalCartPrice)}</span>
+                <span>Subtotal ({totalItems} items)</span>
+                <span>{formatPrice(totalPrice)}</span>
               </div>
               <div className="flex justify-between text-indigo-200">
                 <span>Shipping</span>
@@ -189,7 +150,7 @@ export function CartContainer() {
               <Separator className="bg-indigo-900" />
               <div className="flex justify-between font-bold text-xl text-white">
                 <span>Total</span>
-                <span className="text-indigo-400">{formatPrice(innerCartData.totalCartPrice)}</span>
+                <span className="text-indigo-400">{formatPrice(totalPrice)}</span>
               </div>
             </div>
 

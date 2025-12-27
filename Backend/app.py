@@ -1,9 +1,9 @@
-from flask import Flask, render_template, jsonify
 from flask import Flask, g
 from flask_cors import CORS
-from db import db_connection
 from flask_jwt_extended import JWTManager
 from users import users_bp
+from books import books_bp
+from admins import admins_bp
 
 jwt = JWTManager()
 
@@ -22,6 +22,8 @@ def create_app(config_class=None):
 
     jwt.init_app(app)
     app.register_blueprint(users_bp)
+    app.register_blueprint(books_bp)
+    app.register_blueprint(admins_bp)
 
     @app.route("/health")
     def health():

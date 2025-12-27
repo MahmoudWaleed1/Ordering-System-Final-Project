@@ -48,4 +48,30 @@ def update_user_by_username(username, update_data):
     
     return cursor.rowcount > 0
 
+def get_user_orders(username):
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    # First get all orders
+    cursor.execute("""
+        SELECT order_id, order_date, cost AS total_cost
+        FROM customer_order
+        WHERE username = %s
+        ORDER BY order_date DESC
+    """, (username,))
+    orders = cursor.fetchall()
+    
+    # Then get books for each order
+    for order in orders:
+        cursor.execute("""
+            SELECT bo.ISBN_number, b.title, bo.item_quantity, bo.unit_price
+            FROM book_order bo
+            JOIN book b ON bo.ISBN_number = b.ISBN_number
+            WHERE bo.order_id = %s
+        """, (order['order_id'],))
+        books = cursor.fetchall()
+        order['books'] = books
+    
+    return orders
+
 

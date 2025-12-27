@@ -55,10 +55,25 @@ export function Navbar() {
                 <div className="px-2 py-2 text-xs text-indigo-400 border-b border-indigo-900 mb-1">
                   Signed in as <br/>
                   <span className="text-indigo-100 font-semibold">{(session.user as any).username}</span>
+                  {(session.user as any).role === "Admin" && (
+                    <span className="block mt-1 text-amber-400">Admin</span>
+                  )}
                 </div>
                 <DropdownMenuItem asChild className="cursor-pointer hover:bg-indigo-900/50">
                   <Link href="/profile" className="flex items-center w-full">
                     <User className="mr-2 h-4 w-4" /> Profile
+                  </Link>
+                </DropdownMenuItem>
+                {(session.user as any).role === "Admin" && (
+                  <DropdownMenuItem asChild className="cursor-pointer hover:bg-indigo-900/50">
+                    <Link href="/admin" className="flex items-center w-full">
+                      <Package className="mr-2 h-4 w-4" /> Admin Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem asChild className="cursor-pointer hover:bg-indigo-900/50">
+                  <Link href="/allOrders" className="flex items-center w-full">
+                    <Package className="mr-2 h-4 w-4" /> My Orders
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem 
@@ -66,11 +81,6 @@ export function Navbar() {
                   className="cursor-pointer text-red-400 hover:bg-red-900/20 focus:text-red-400"
                 >
                   <LogOut className="mr-2 h-4 w-4" /> Logout
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="cursor-pointer hover:bg-indigo-900/50">
-                  <Link href="/allorders" className="flex items-center w-full">
-                    <Package className="mr-2 h-4 w-4" /> My Orders
-                  </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

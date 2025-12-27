@@ -1,6 +1,5 @@
 "use client";
-import { apiService } from "@/services/api";
-import { useSession } from "next-auth/react";
+import { cartStorage } from "@/helpers/cartStorage";
 import {
   useState,
   createContext,
@@ -12,9 +11,11 @@ import {
 export const cartContext = createContext<{
   cartCount: number;
   setCartCount: Dispatch<SetStateAction<number>>;
+  refreshCart: () => void;
 }>({
   cartCount: 0,
   setCartCount: (value: SetStateAction<number>) => null,
+  refreshCart: () => null,
 });
 
 export default function CartContextProvider({
@@ -22,33 +23,24 @@ export default function CartContextProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { data: session } = useSession();
   const [cartCount, setCartCount] = useState(0);
 
-  async function getCart() {
-    const token = (session?.user as any)?.token;
-    if (!token) {
-      setCartCount(0);
-      return;
-    }
-
-    try {
-      const response = await apiService.getLoggedUserCart(token);
-      if (response.ok && response.data) {
-        setCartCount(response.data.numOfCartItems || 0);
-      }
-    } catch (error) {
-      console.error("Failed to fetch cart:", error);
-      setCartCount(0);
-    }
-  }
+  const refreshCart = () => {
+    setCartCount(cartStorage.getCartCount());
+  };
 
   useEffect(() => {
-    getCart();
-  }, [session]);
+    refreshCart();
+    // Listen for storage changes (e.g., from other tabs)
+    const handleStorageChange = () => {
+      refreshCart();
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
   return (
-    <cartContext.Provider value={{ cartCount, setCartCount }}>
+    <cartContext.Provider value={{ cartCount, setCartCount, refreshCart }}>
       {children}
     </cartContext.Provider>
   );

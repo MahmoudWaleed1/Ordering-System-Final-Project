@@ -55,17 +55,23 @@ def book_search(isbn, title, category, author, publisher):
    
 def create_customer_order(username, credit_card, books):
     db = get_db()
-    cursor = db.cursor()
+    cursor = db.cursor(dictionary=True)
 
     cursor.execute("INSERT INTO customer_order (credit_card_number, username) VALUES (%s, %s)", (credit_card, username))
     order_id = cursor.lastrowid
+    total_cost = 0
+    
     for book in books:
         isbn = book.get("ISBN_number")
         quantity = book.get("quantity")
         cursor.execute("SELECT selling_price FROM book WHERE ISBN_number = %s", (isbn,))
-        unit_price = cursor.fetchone()
-        cursor.execute("INSERT INTO order_item (order_id, ISBN_number, quantity, unit_price) VALUES (%s, %s, %s)", (order_id, isbn, quantity, unit_price['selling_price']))
+        price_result = cursor.fetchone()
+        if not price_result:
+            raise ValueError(f"Book with ISBN {isbn} not found")
+        unit_price = float(price_result['selling_price'])
+        cursor.execute("INSERT INTO book_order (order_id, ISBN_number, item_quantity, unit_price) VALUES (%s, %s, %s, %s)", (order_id, isbn, quantity, unit_price))
+        total_cost += unit_price * quantity
 
-    cursor.execute("UPDATE customer_order SET cost = (SELECT SUM(quantity * unit_price) FROM order_item WHERE order_id = %s) WHERE order_id = %s", (order_id, order_id))
+    cursor.execute("UPDATE customer_order SET cost = %s WHERE order_id = %s", (total_cost, order_id))
     db.commit()
     return order_id

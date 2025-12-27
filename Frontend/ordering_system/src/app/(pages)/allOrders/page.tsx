@@ -57,7 +57,7 @@ export default function OrdersPage() {
       <div className="space-y-6">
         {orders.map((order) => (
           <div 
-            key={order._id} 
+            key={order.order_id} 
             className="bg-[#0b1020]/80 border border-indigo-900 rounded-2xl overflow-hidden shadow-xl"
           >
             {/* Order Header */}
@@ -65,48 +65,44 @@ export default function OrdersPage() {
               <div className="flex items-center space-x-4">
                 <div className="text-sm">
                   <p className="text-indigo-400 uppercase text-xs font-bold tracking-wider">Order ID</p>
-                  <p className="text-white font-mono">#{order._id.slice(-8)}</p>
+                  <p className="text-white font-mono">#{order.order_id}</p>
                 </div>
                 <div className="text-sm border-l border-indigo-800 pl-4">
                   <p className="text-indigo-400 uppercase text-xs font-bold tracking-wider">Date</p>
-                  <p className="text-white">{new Date(order.createdAt).toLocaleDateString()}</p>
+                  <p className="text-white">{new Date(order.order_date).toLocaleDateString()}</p>
                 </div>
               </div>
               
               <div className="flex items-center gap-3">
-                <Badge className={order.isPaid ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"}>
-                  {order.isPaid ? <CheckCircle2 className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
-                  {order.isPaid ? "Paid" : "Pending Payment"}
+                <Badge className="bg-emerald-500/20 text-emerald-400">
+                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                  Completed
                 </Badge>
                 <p className="text-xl font-bold text-indigo-400">
-                  {formatPrice(order.totalOrderPrice)}
+                  {formatPrice(order.total_cost || 0)}
                 </p>
               </div>
             </div>
 
             {/* Order Items */}
             <div className="p-6 space-y-4">
-              {order.cartItems.map((item: any) => (
-                <div key={item._id} className="flex items-center space-x-4">
-                  <div className="h-16 w-12 bg-indigo-900/50 rounded flex-shrink-0 flex items-center justify-center text-xs text-indigo-300">
-                    IMG
+              {order.books && order.books.length > 0 ? (
+                order.books.map((item: any, index: number) => (
+                  <div key={index} className="flex items-center space-x-4">
+                    <div className="h-16 w-12 bg-indigo-900/50 rounded flex-shrink-0 flex items-center justify-center text-xs text-indigo-300">
+                      IMG
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-white font-medium">{item.title}</p>
+                      <p className="text-sm text-indigo-400">Qty: {item.item_quantity}</p>
+                      <p className="text-xs text-indigo-500">ISBN: {item.ISBN_number}</p>
+                    </div>
+                    <p className="text-indigo-200">{formatPrice(item.unit_price * item.item_quantity)}</p>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-white font-medium">{item.book.title}</p>
-                    <p className="text-sm text-indigo-400">Qty: {item.count}</p>
-                  </div>
-                  <p className="text-indigo-200">{formatPrice(item.price)}</p>
-                </div>
-              ))}
-              
-              <Separator className="bg-indigo-900/50" />
-              
-              {/* Shipping Details */}
-              <div className="text-sm text-indigo-300">
-                <p className="font-bold text-indigo-100 mb-1">Shipping to:</p>
-                <p>{order.shippingAddress.city}, {order.shippingAddress.details}</p>
-                <p>Phone: {order.shippingAddress.phone}</p>
-              </div>
+                ))
+              ) : (
+                <p className="text-indigo-400 text-sm">No items found</p>
+              )}
             </div>
           </div>
         ))}

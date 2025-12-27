@@ -2,6 +2,20 @@
 
 This repository contains the **final ordering system web project**, developed using a **React frontend** and a **Flask backend**.
 
+## 🚀 Quick Start
+
+See [QUICK_START.md](./QUICK_START.md) for a quick setup guide, or [SETUP.md](./SETUP.md) for detailed instructions.
+
+### Prerequisites
+- MySQL/MariaDB
+- Python 3.8+
+- Node.js 18+
+
+### Quick Setup
+1. **Database**: Run SQL scripts in `Database/` folder
+2. **Backend**: `cd Backend && pip install -r requirements.txt && python run.py`
+3. **Frontend**: `cd Frontend/ordering_system && npm install && npm run dev`
+
 ---
 
 ## 📌 GitHub Conventions
