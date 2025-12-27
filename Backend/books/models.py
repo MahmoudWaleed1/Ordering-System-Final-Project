@@ -64,8 +64,8 @@ def create_customer_order(username, credit_card, books):
         quantity = book.get("quantity")
         cursor.execute("SELECT selling_price FROM book WHERE ISBN_number = %s", (isbn,))
         unit_price = cursor.fetchone()
-        cursor.execute("INSERT INTO order_item (order_id, ISBN_number, quantity, unit_price) VALUES (%s, %s, %s)", (order_id, isbn, quantity, unit_price['selling_price']))
+        cursor.execute("INSERT INTO book_order (order_id, ISBN_number, quantity, unit_price) VALUES (%s, %s, %s)", (order_id, isbn, quantity, unit_price['selling_price']))
 
-    cursor.execute("UPDATE customer_order SET cost = (SELECT SUM(quantity * unit_price) FROM order_item WHERE order_id = %s) WHERE order_id = %s", (order_id, order_id))
+    cursor.execute("UPDATE customer_order SET cost = (SELECT SUM(quantity * unit_price) FROM book_order WHERE order_id = %s) WHERE order_id = %s", (order_id, order_id))
     db.commit()
     return order_id
