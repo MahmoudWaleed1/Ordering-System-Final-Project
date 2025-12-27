@@ -38,7 +38,7 @@ def book_search(isbn, title, category, author, publisher):
         query += " AND category = %s"
         params.append(category)
     if author:
-        query += " AND author_name LIKE %s"
+        query += " AND A.author_name LIKE %s"
         params.append(f"%{author}%")
     if publisher:
         query += " AND name LIKE %s"

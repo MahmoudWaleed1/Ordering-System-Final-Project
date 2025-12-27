@@ -70,6 +70,7 @@ const handler = NextAuth({
         token.id = user.id;
         token.token = (user as any).token;
         token.role = (user as any).role;
+        token.username = (user as any).username; // Add username to token
       }
       return token;
     },
@@ -79,9 +80,11 @@ const handler = NextAuth({
         (session.user as any).id = token.id as string;
         (session.user as any).token = token.token as string;
         (session.user as any).role = token.role as string;
+        (session.user as any).username = token.username as string; // Pass username to session
       }
       return session;
     },
+
   },
 
   pages: {
