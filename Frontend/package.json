@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "dev": "npm --prefix ./ordering_system run dev"
+  },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "class-variance-authority": "^0.7.1",
