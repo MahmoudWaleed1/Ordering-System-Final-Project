@@ -4,9 +4,8 @@ import Link from "next/link";
 
 export function Footer() {
   return (
-   <footer className="w-full bg-[#0b1020]/90 backdrop-blur-xl shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+   <footer className="w-full mt-auto bg-[#0b1020]/90 backdrop-blur-xl border-t border-indigo-900 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
       <div className="container mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center text-indigo-200">
-        
         {/* Logo / Company */}
         <div className="flex items-center space-x-2 mb-4 md:mb-0">
           <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center">

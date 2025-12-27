@@ -1,19 +1,20 @@
 "use client";
-import { Button} from "@/components";
+
+import { Button } from "@/components";
 import { CartBook } from "@/components/books/CartBook";
 import { cartContext } from "@/contexts/cartContext";
 import { formatPrice } from "@/helpers/currency";
 import { apiService } from "@/services/api";
-import { Separator } from "@/components/ui/separator"; // Ensure this path is correct in your project
+import { Separator } from "@/components/ui/separator";
 import { Loader2, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useContext, useEffect, useState } from "react";
-import { useSession } from "next-auth/react"; // Added to handle authentication
+import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 
 export function CartContainer() {
-  const { data: session } = useSession(); // Access the current session
+  const { data: session, status } = useSession();
   const [innerCartData, setInnerCartData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [isClearingCart, setIsClearingCart] = useState(false);
@@ -21,27 +22,36 @@ export function CartContainer() {
   const { setCartCount } = useContext(cartContext);
   const router = useRouter();
 
-  // Safely extract the token from the session
   const token = (session?.user as any)?.token;
 
-  // 🔑 fetch cart on mount or when token changes
   useEffect(() => {
     async function fetchCart() {
-      if (!token) return; // Wait until the user is authenticated
-      
-      setLoading(true);
-      const response = await apiService.getLoggedUserCart(token); // Pass token to API
-      
-      if (response.ok) {
-        setInnerCartData(response.data);
-        setCartCount(response.data.numOfCartItems || 0);
-      } else {
-        toast.error("Failed to load cart");
+      if (status === "loading") return;
+      if (!token) {
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+
+      try {
+        setLoading(true);
+        const response = await apiService.getLoggedUserCart(token);
+        
+        if (response.ok && response.data) {
+          setInnerCartData(response.data);
+          setCartCount(response.data.numOfCartItems || 0);
+        } else {
+          setInnerCartData(null);
+        }
+      } catch (error) {
+        console.error("Error fetching cart:", error);
+        toast.error("Could not load cart data");
+      } finally {
+        setLoading(false);
+      }
     }
+
     fetchCart();
-  }, [token, setCartCount]);
+  }, [token, status, setCartCount]);
 
   async function handleRemoveCartItem(
     productId: string,
@@ -50,43 +60,49 @@ export function CartContainer() {
     if (!token) return;
     setIsRemovingItem(true);
     
-    // API must receive the token to authorize the deletion
-    const response = await apiService.removeSpecificCartItem(productId, token);
-    setIsRemovingItem(false);
-
-    if (response.status === "success") {
-      toast.success("Product removed successfully");
-      const newCartData = await apiService.getLoggedUserCart(token);
-      setInnerCartData(newCartData.data);
-      setCartCount(newCartData.data.numOfCartItems);
-    } else {
-      toast.error(response.message ?? "An error occurred");
+    try {
+      const response = await apiService.removeSpecificCartItem(productId, token);
+      if (response.status === "success") {
+        toast.success("Book removed successfully");
+        const newCartData = await apiService.getLoggedUserCart(token);
+        setInnerCartData(newCartData.data);
+        setCartCount(newCartData.data.numOfCartItems);
+      }
+    } catch (error) {
+      toast.error("Failed to remove item");
+    } finally {
+      setIsRemovingItem(false);
     }
   }
 
   async function handleClearCart() {
     if (!token) return;
     setIsClearingCart(true);
-    const response = await apiService.clearCart(token); // Pass token
-    setIsClearingCart(false);
-
-    if (response.status === "success") {
-      toast.success("Cart cleared successfully");
-      setInnerCartData(null);
-      setCartCount(0);
-    } else {
-      toast.error(response.message ?? "An error occurred");
+    try {
+      const response = await apiService.clearCart(token);
+      if (response.status === "success" || response.message === "success") {
+        toast.success("Cart cleared");
+        setInnerCartData(null);
+        setCartCount(0);
+      }
+    } catch (error) {
+      toast.error("Failed to clear cart");
+    } finally {
+      setIsClearingCart(false);
     }
   }
 
   async function handleUpdateCartProductCount(productId: string, count: number) {
     if (!token) return;
-    const response = await apiService.updateCartProductCount(productId, count, token); // Pass token
-    
-    if (response.status === "success") {
-      const newCartData = await apiService.getLoggedUserCart(token);
-      setInnerCartData(newCartData.data);
-      setCartCount(newCartData.data.numOfCartItems);
+    try {
+      const response = await apiService.updateCartProductCount(productId, count, token);
+      if (response.status === "success") {
+        const newCartData = await apiService.getLoggedUserCart(token);
+        setInnerCartData(newCartData.data);
+        setCartCount(newCartData.data.numOfCartItems);
+      }
+    } catch (error) {
+      toast.error("Failed to update quantity");
     }
   }
 
@@ -97,38 +113,42 @@ export function CartContainer() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
+      <div className="flex flex-col justify-center items-center py-40 space-y-4">
+        <Loader2 className="h-10 w-10 animate-spin text-indigo-500" />
+        <p className="text-indigo-300 animate-pulse">Loading your library cart...</p>
       </div>
     );
   }
 
   if (!innerCartData || innerCartData.numOfCartItems === 0) {
     return (
-      <div className="text-center py-20">
-        <h2 className="text-xl font-semibold text-gray-700 mb-4">No Books in your cart</h2>
-        <Button variant="outline" className="mt-2" asChild>
-          <Link href="/products">Browse Books</Link>
+      <div className="text-center py-20 bg-[#0b1020]/50 rounded-3xl border border-indigo-900/50">
+        <h2 className="text-2xl font-semibold text-indigo-100 mb-4">
+          Your cart is currently empty
+        </h2>
+        <p className="text-indigo-300 mb-8">Ready to add some new books to your collection?</p>
+        <Button className="bg-indigo-600 hover:bg-indigo-700" asChild>
+          <Link href="/books">Browse Books</Link>
         </Button>
       </div>
     );
   }
 
   return (
-    <>
+    <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4">Shopping Cart</h1>
-        <p className="text-muted-foreground">
-          {innerCartData.numOfCartItems} item{innerCartData.numOfCartItems !== 1 ? "s" : ""} in your cart
+        <h1 className="text-3xl font-bold text-white mb-2">Shopping Cart</h1>
+        <p className="text-indigo-300">
+          You have {innerCartData.numOfCartItems} book{innerCartData.numOfCartItems !== 1 ? "s" : ""} reserved.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div className="lg:col-span-2 space-y-4">
           <div className="space-y-4">
             {innerCartData.products?.map((item: any) => (
               <CartBook
-                key={item.book.isbn}
+                key={item.book.isbn || item._id}
                 item={item}
                 onRemoveItem={handleRemoveCartItem}
                 onUpdateItemCount={handleUpdateCartProductCount}
@@ -136,38 +156,64 @@ export function CartContainer() {
             ))}
           </div>
 
-          <div className="mt-6">
-            <Button disabled={isClearingCart} onClick={handleClearCart} variant="outline">
-              {isClearingCart ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-              Clear Cart
+          <div className="mt-8">
+            <Button 
+              disabled={isClearingCart} 
+              onClick={handleClearCart} 
+              variant="destructive"
+              className="bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-900/50"
+            >
+              {isClearingCart ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              Clear Entire Cart
             </Button>
           </div>
         </div>
 
         <div className="lg:col-span-1">
-          <div className="border rounded-lg p-6 sticky top-20">
-            <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
-            <div className="space-y-2 mb-4">
-              <div className="flex justify-between">
+          <div className="bg-[#0b1020]/80 backdrop-blur-xl border border-indigo-900 rounded-2xl p-6 sticky top-24 shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-6">Order Summary</h3>
+            
+            <div className="space-y-4 mb-6">
+              <div className="flex justify-between text-indigo-200">
                 <span>Subtotal ({innerCartData.numOfCartItems} items)</span>
                 <span>{formatPrice(innerCartData.totalCartPrice)}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between text-indigo-200">
                 <span>Shipping</span>
-                <span className="text-green-600">Free</span>
+                <span className="text-emerald-400 font-medium">Free</span>
+              </div>
+              <Separator className="bg-indigo-900" />
+              <div className="flex justify-between font-bold text-xl text-white">
+                <span>Total</span>
+                <span className="text-indigo-400">{formatPrice(innerCartData.totalCartPrice)}</span>
               </div>
             </div>
-            <Separator className="my-4" />
-            <div className="flex justify-between font-semibold text-lg mb-6">
-              <span>Total</span>
-              <span>{formatPrice(innerCartData.totalCartPrice)}</span>
-            </div>
-            <Button onClick={handleProceedToCheckout} disabled={isProceedingToCheckout} className="w-full" size="lg">
-              {isProceedingToCheckout ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Proceed to Checkout'}
+
+            <Button 
+              onClick={handleProceedToCheckout} 
+              disabled={isProceedingToCheckout} 
+              className="w-full h-12 text-lg bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-900/20"
+            >
+              {isProceedingToCheckout ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                'Proceed to Checkout'
+              )}
             </Button>
+
+            <Link 
+              href="/books" 
+              className="block text-center mt-4 text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+            >
+              ← Continue Browsing Books
+            </Link>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

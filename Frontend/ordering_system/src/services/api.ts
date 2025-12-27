@@ -106,6 +106,36 @@ async login(username: string, password: string) {
         });
         return response.json();
     }
+
+  async createCashOrder(shippingAddress: any, token: string) {
+    const response = await fetch(`${this.#baseUrl}/api/orders`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ shippingAddress })
+    });
+    return await response.json();
+}
+
+  // add this inside your ApiService class 
+async getUserOrders(token: string) {
+    try {
+        const response = await fetch(`${this.#baseUrl}/api/orders`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            }
+        });
+        const data = await response.json();
+        return { ok: response.ok, data };
+    } catch (error) {
+        console.error("Orders fetch error:", error);
+        return { ok: false, data: [] };
+    }
+}
 }
 
 export const apiService = new ApiService();
