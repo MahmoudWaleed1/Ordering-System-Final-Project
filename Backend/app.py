@@ -13,7 +13,9 @@ def create_app(config_class=None):
     CORS(
         app,
         resources={r"/api/*": {"origins": "http://localhost:3000"}},
-        supports_credentials=True
+        supports_credentials=True,
+        allow_headers=["Content-Type", "Authorization"],
+        expose_headers=["Content-Type"]
     )
     
     if config_class:

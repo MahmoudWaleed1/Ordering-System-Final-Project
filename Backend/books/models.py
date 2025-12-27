@@ -1,5 +1,50 @@
 from db.db_connection import get_db
 
+def normalize_image_path(img_path):
+    """
+    Normalize image path to detect external URLs and local paths correctly.
+    Handles various formats of image paths.
+    """
+    if not img_path:
+        return None
+    
+    # If already a full URL, return as-is
+    if img_path.startswith('http://') or img_path.startswith('https://'):
+        return img_path
+    
+    # If starts with //, it's a protocol-relative URL - add https
+    if img_path.startswith('//'):
+        return f"https:{img_path}"
+    
+    # Check for common domain patterns (likely missing protocol)
+    external_domains = [
+        'up.yimg.com',
+        'tse1.mm.bing.net',
+        'tse2.mm.bing.net', 
+        'tse3.mm.bing.net',
+        'tse4.mm.bing.net',
+        'cdn.pixabay.com',
+    ]
+    
+    for domain in external_domains:
+        if domain in img_path:
+            # This looks like an external URL without protocol
+            if img_path.startswith('/'):
+                # Remove leading slash and add protocol
+                return f"https:{img_path}"
+            else:
+                return f"https://{img_path}"
+    
+    # If it starts with /images/, use as-is (from public folder)
+    if img_path.startswith('/images/'):
+        return img_path
+    
+    # Otherwise, treat as local path - prepend /images/
+    if img_path.startswith('/'):
+        return img_path
+    else:
+        return f"/images/{img_path}"
+
 def get_books_page():
     db = get_db()
     cursor = db.cursor(dictionary=True)
@@ -13,7 +58,8 @@ def get_books_page():
 
     books = cursor.fetchall()
     for book in books:
-        book["book_image"] = f"/images/{book['book_image']}"
+        img_path = book['book_image']
+        book["book_image"] = normalize_image_path(img_path)
 
         cursor.execute("SELECT author_name FROM author WHERE ISBN_number = %s", (book['ISBN_number'],))
         authors = cursor.fetchall()
@@ -50,7 +96,8 @@ def book_search(isbn, title, category, author, publisher):
     books= cursor.fetchall()
 
     for book in books:
-        book["book_image"] = f"/images/{book['book_image']}"
+        img_path = book['book_image']
+        book["book_image"] = normalize_image_path(img_path)
         cursor.execute("SELECT author_name FROM author WHERE ISBN_number = %s", (book['ISBN_number'],))
         authors = cursor.fetchall()
         book["authors"] = [a["author_name"] for a in authors]
@@ -73,6 +120,9 @@ def get_book_details(isbn):
     book = cursor.fetchone()
     
     if book:
+        if book['book_image']:
+            img_path = book['book_image']
+            book["book_image"] = normalize_image_path(img_path)
         cursor.execute("SELECT author_name FROM author WHERE ISBN_number = %s", (isbn,))
         authors = cursor.fetchall()
         book["authors"] = [a["author_name"] for a in authors]

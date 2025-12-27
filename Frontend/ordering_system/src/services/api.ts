@@ -3,13 +3,17 @@ import { Book } from "@/interfaces/book";
 const formatImagePath = (imagePath: string) => {
     if (!imagePath) return "/placeholder-book.jpg"; // Default if missing
     if (imagePath.startsWith('http')) {
+        return imagePath; // External URL, use as-is
+    }
+    // If it starts with /images/, it's from public folder, use as-is (no backend URL needed)
+    if (imagePath.startsWith('/images/')) {
         return imagePath;
     }
-    // If it's a relative path starting with /, use it as-is (backend already formats it)
+    // If it's a relative path starting with / (but not /images/), use backend
     if (imagePath.startsWith('/')) {
         return `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"}${imagePath}`;
     }
-    // If it doesn't start with /, assume it's a filename - use /images/ path
+    // If it doesn't start with /, assume it's a filename - use /images/ path (backend)
     return `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"}/images/${imagePath}`;
 };
 

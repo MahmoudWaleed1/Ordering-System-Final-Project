@@ -20,6 +20,7 @@ export function CartBook({
 }: CartBookProps) {
   const [isRemovingItem, setIsRemovingItem] = useState(false);
   const [productCount, setProductCount] = useState(item.quantity);
+  const [imageError, setImageError] = useState(false);
   const [timeOutId, setTimeOutId] = useState<NodeJS.Timeout>();
 
   useEffect(() => {
@@ -43,16 +44,19 @@ export function CartBook({
   const bookIsbn = item.book.isbn || item.book.ISBN_number || "";
   const bookImage = item.book.image || item.book.book_image || "/placeholder-book.jpg";
   const bookPrice = item.book.price || item.book.selling_price || 0;
+  const isExternalImage = bookImage.startsWith('http://') || bookImage.startsWith('https://');
 
   return (
     <div key={bookIsbn} className="flex gap-4 p-4 bg-[#0b1020]/50 border border-indigo-900/50 rounded-lg">
-      <div className="relative w-20 h-20 flex-shrink-0">
+      <div className="relative w-20 h-20 flex-shrink-0 bg-gray-100 rounded-md">
         <Image
-          src={bookImage}
+          src={imageError ? "/placeholder-book.jpg" : bookImage}
           alt={item.book.title}
           fill
           className="object-cover rounded-md"
           sizes="80px"
+          unoptimized={isExternalImage}
+          onError={() => setImageError(true)}
         />
       </div>
 

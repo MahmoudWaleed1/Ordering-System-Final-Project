@@ -17,6 +17,7 @@ interface BookCardProps {
 
 export function BookCard({ book }: BookCardProps) {
   const [addingToCart, setAddingToCart] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const { refreshCart } = useContext(cartContext);
 
   const handleAddToCart = () => {
@@ -40,17 +41,20 @@ export function BookCard({ book }: BookCardProps) {
   const bookImage = book.image || book.book_image || "/placeholder-book.jpg";
   const bookPrice = book.price || book.selling_price || 0;
   const bookIsbn = book.isbn || book.ISBN_number || "";
+  const isExternalImage = bookImage.startsWith('http://') || bookImage.startsWith('https://');
 
   return (
     <div className="group relative bg-white border rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300">
       {/* Image container */}
-      <div className="relative aspect-square overflow-hidden">
+      <div className="relative aspect-square overflow-hidden bg-gray-100">
         <Image
-          src={bookImage}
+          src={imageError ? "/placeholder-book.jpg" : bookImage}
           alt={book.title}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+          unoptimized={isExternalImage}
+          onError={() => setImageError(true)}
         />
       </div>
 
