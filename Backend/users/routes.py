@@ -1,7 +1,7 @@
 from . import users_bp
 from config import *
 from flask import Blueprint, request, jsonify
-from users.models import get_user_by_username, create_user, update_user_by_username
+from users.models import *
 from auth.tokens import generate_access_token
 from auth.decorators import admin_required
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -129,3 +129,10 @@ def order_books():
 
     return jsonify({"msg": "Order placed successfully", "order_id": order_id}), 201
 
+
+@users_bp.route("/orders", methods=["GET"])
+@jwt_required()
+def get_orders():
+    username = get_jwt_identity()
+    orders = get_customer_orders(username)
+    return jsonify(orders)

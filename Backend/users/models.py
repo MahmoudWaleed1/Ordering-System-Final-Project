@@ -65,4 +65,38 @@ def create_customer_order(username, credit_card, books):
     db.commit()
     return order_id
 
+def get_customer_orders(username):
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT CO.order_id, CO.order_date, CO.cost, BO.ISBN_number, BO.quantity, BO.unit_price,
+        B.title           
+        FROM customer_order AS CO
+        JOIN book_order AS BO ON CO.order_id = BO.order_id
+        JOIN book AS B ON BO.ISBN_number = B.ISBN_number           
+        WHERE CO.username = %s
+        ORDER BY CO.order_date DESC
+    """, (username,))
+
+    orders_data = cursor.fetchall()
+    orders = {}
+    for row in orders_data:
+        order_id = row['order_id']
+        if order_id not in orders:
+            orders[order_id] = {
+                "order_id": order_id,
+                "order_date": row['order_date'],
+                "cost": row['cost'],
+                "items": []
+            }
+        orders[order_id]["items"].append({
+            "ISBN_number": row['ISBN_number'],
+            "title": row['title'],
+            "quantity": row['quantity'],
+            "unit_price": row['unit_price']
+        })
+
+    return list(orders.values())
+
 
