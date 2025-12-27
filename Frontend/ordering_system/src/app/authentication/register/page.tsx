@@ -92,7 +92,7 @@ export default function RegisterPage() {
       );
 
       if (data.message === "success") {
-        router.push("/auth/login");
+        router.push("/authentication/login");
       } else {
         alert(data.message || "Something went wrong");
       }

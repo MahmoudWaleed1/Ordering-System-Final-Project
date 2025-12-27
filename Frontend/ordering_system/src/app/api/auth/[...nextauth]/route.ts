@@ -7,25 +7,43 @@ const handler = NextAuth({
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "text" },
+        username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
       },
+
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
-
-        const data = await apiService.login(credentials.email, credentials.password);
-
-        if (data?.token && data?.user) {
-          return {
-            id: data.user._id || data.user.id,
-            name: data.user.name,
-            email: data.user.email,
-            token: data.token,
-            role: data.user.role || "user",
-          };
+        if (!credentials?.username || !credentials?.password) {
+          return null;
         }
 
-        return null;
+        const res = await apiService.login(
+          credentials.username,
+          credentials.password
+        );
+
+        // If the backend returned an error status, fail the auth
+        if (!res.ok || !res.data) {
+          console.error("Login failed at backend:", res.status);
+          return null;
+        }
+
+        // Logic to handle different backend response structures
+        // It checks if 'user' is nested or if the data itself is the user
+        const user = res.data.user || res.data;
+        const token = res.data.token;
+
+        if (!user) {
+          return null;
+        }
+
+        return {
+          id: user._id ?? user.id,
+          name: user.name,
+          email: user.email,
+          username: user.username,
+          role: user.role ?? "user",
+          token: token, // This passes the token to the JWT callback
+        };
       },
     }),
   ],
@@ -36,23 +54,24 @@ const handler = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.token = user.token;
-        token.role = user.role;
+        token.token = (user as any).token;
+        token.role = (user as any).role;
       }
       return token;
     },
+
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
-        session.user.token = token.token as string;
-        session.user.role = token.role as string;
+        (session.user as any).id = token.id as string;
+        (session.user as any).token = token.token as string;
+        (session.user as any).role = token.role as string;
       }
       return session;
     },
   },
 
   pages: {
-    signIn: "/auth/login",
+    signIn: "/authentication/login",
   },
 
   secret: process.env.AUTH_SECRET,
