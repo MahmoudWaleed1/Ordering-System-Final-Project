@@ -27,3 +27,24 @@ def search_for_books():
 
     return jsonify(books)
 
+@books_bp.route("/", methods=["POST"])
+@admin_required
+def add_book():
+    data = request.get_json()
+
+    try:
+        add_new_book(data)
+    except IntegrityError as e:
+        return jsonify({"message": "Book with this ISBN already exists."}), 400
+
+    return jsonify({"message": "Book added successfully."}), 201
+
+@books_bp.route("/", methods=["PUT"])
+@admin_required
+def update_book():
+    data = request.get_json()
+
+    update_existing_book(data)
+
+    return jsonify({"message": "Book updated successfully."}), 200
+
