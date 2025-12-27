@@ -59,6 +59,53 @@ async login(username: string, password: string) {
         const url = `${this.#baseUrl}/api/users/books/search?${params.toString()}`;
         return await fetch(url).then((res) => res.json());
     }
+      // Helper for Auth Headers
+    #getAuthHeaders(token: string) {
+        return {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        };
+    }
+
+    // ... (Keep signup, login, and book methods as they are)
+
+    async getLoggedUserCart(token: string) {
+        try {
+            const response = await fetch(`${this.#baseUrl}/api/cart`, {
+                method: "GET",
+                headers: this.#getAuthHeaders(token)
+            });
+            const data = await response.json();
+            return { ok: response.ok, data };
+        } catch (error) {
+            return { ok: false, data: null };
+        }
+    }
+
+    async removeSpecificCartItem(productId: string, token: string) {
+        const response = await fetch(`${this.#baseUrl}/api/cart/${productId}`, {
+            method: "DELETE",
+            headers: this.#getAuthHeaders(token)
+        });
+        return response.json();
+    }
+
+    async updateCartProductCount(productId: string, count: number, token: string) {
+        const response = await fetch(`${this.#baseUrl}/api/cart/${productId}`, {
+            method: "PUT",
+            headers: this.#getAuthHeaders(token),
+            body: JSON.stringify({ count }),
+        });
+        return response.json();
+    }
+
+    async clearCart(token: string) {
+        const response = await fetch(`${this.#baseUrl}/api/cart`, {
+            method: "DELETE",
+            headers: this.#getAuthHeaders(token)
+        });
+        return response.json();
+    }
 }
 
 export const apiService = new ApiService();
