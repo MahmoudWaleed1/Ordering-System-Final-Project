@@ -1,4 +1,5 @@
 import { Book, Search, BookOpen, Library, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Home() {
   const features = [
@@ -42,13 +43,13 @@ export default function Home() {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+            <Link href="/books" className="px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
               Browse Books
               <ArrowRight className="w-5 h-5" />
-            </button>
-            <button className="px-8 py-4 bg-[#0b1020] hover:bg-[#1a1a2e] text-purple-400 font-semibold rounded-xl border-2 border-purple-600 transition-all shadow-md hover:shadow-lg">
+            </Link>
+            <Link href="/books" className="px-8 py-4 bg-[#0b1020] hover:bg-[#1a1a2e] text-purple-400 font-semibold rounded-xl border-2 border-purple-600 transition-all shadow-md hover:shadow-lg">
               Learn More
-            </button>
+            </Link>
           </div>
         </div>
       </section>

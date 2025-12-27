@@ -32,6 +32,7 @@ export default function BooksPage() {
     title: "",
     category: "",
     publisher: "",
+    author: "",
   });
 
   async function getBooks() {
@@ -90,6 +91,7 @@ export default function BooksPage() {
       title: "",
       category: "",
       publisher: "",
+      author: "",
     });
     setFilteredBooks(books);
   };
@@ -104,7 +106,7 @@ export default function BooksPage() {
       {/* Search Form */}
       <form onSubmit={handleSearch} className="mb-8 p-6 bg-gray-50 rounded-lg border">
         <h3 className="text-lg font-semibold mb-4">Search Books</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <input
             type="text"
             placeholder="ISBN"
@@ -117,6 +119,13 @@ export default function BooksPage() {
             placeholder="Title"
             value={searchParams.title}
             onChange={(e) => setSearchParams({ ...searchParams, title: e.target.value })}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+          <input
+            type="text"
+            placeholder="Author"
+            value={searchParams.author}
+            onChange={(e) => setSearchParams({ ...searchParams, author: e.target.value })}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <select

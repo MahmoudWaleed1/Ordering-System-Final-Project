@@ -1,9 +1,10 @@
-from flask import Flask, g
+from flask import Flask, g, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from users import users_bp
 from books import books_bp
 from admins import admins_bp
+import os
 
 jwt = JWTManager()
 
@@ -24,6 +25,18 @@ def create_app(config_class=None):
     app.register_blueprint(users_bp)
     app.register_blueprint(books_bp)
     app.register_blueprint(admins_bp)
+
+    # Serve static files (book images)
+    @app.route("/static/<path:filename>")
+    def static_files(filename):
+        static_folder = os.path.join(os.path.dirname(__file__), "static")
+        return send_from_directory(static_folder, filename)
+    
+    # Serve images from /images route (alternative path)
+    @app.route("/images/<path:filename>")
+    def images_files(filename):
+        static_folder = os.path.join(os.path.dirname(__file__), "static")
+        return send_from_directory(static_folder, filename)
 
     @app.route("/health")
     def health():

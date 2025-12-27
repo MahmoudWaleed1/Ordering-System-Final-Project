@@ -113,6 +113,8 @@ def update_profile():
 @jwt_required()
 def get_orders():
     username = get_jwt_identity()
-    orders = get_user_orders(username)
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    orders = get_user_orders(username, start_date=start_date, end_date=end_date)
     return jsonify(orders), HTTP_200_OK
 

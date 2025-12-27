@@ -16,9 +16,14 @@ import toast from "react-hot-toast";
 
 const checkoutSchema = z.object({
   credit_card_number: z.string().min(13, "Credit card number is required"),
-  details: z.string().min(5, "Address details are required"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits"),
-  city: z.string().min(2, "City is required"),
+  expiration_date: z.string()
+    .regex(/^\d{4}-\d{2}$/, "Expiration date must be in YYYY-MM format")
+    .refine((date) => {
+      const [year, month] = date.split('-').map(Number);
+      const expDate = new Date(year, month - 1);
+      const today = new Date();
+      return expDate > today;
+    }, "Credit card has expired"),
 });
 
 export default function CheckoutPage() {
@@ -26,6 +31,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cartItems, setCartItems] = useState(cartStorage.getCart());
+  const [userProfile, setUserProfile] = useState<any>(null);
   const token = (session?.user as any)?.token;
 
   useEffect(() => {
@@ -33,15 +39,22 @@ export default function CheckoutPage() {
       toast.error("Your cart is empty");
       router.push("/cart");
     }
-  }, [cartItems.length, router]);
+    
+    // Load user profile to get shipping address
+    if (token) {
+      apiService.getUserProfile(token).then((response) => {
+        if (response.ok) {
+          setUserProfile(response.data);
+        }
+      });
+    }
+  }, [cartItems.length, router, token]);
 
   const form = useForm<z.infer<typeof checkoutSchema>>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: { 
       credit_card_number: "",
-      details: "", 
-      phone: "", 
-      city: "" 
+      expiration_date: "",
     },
   });
 
@@ -68,7 +81,8 @@ export default function CheckoutPage() {
       const response = await apiService.createOrder(
         books,
         values.credit_card_number,
-        token
+        token,
+        values.expiration_date
       );
 
       if (response.ok) {
@@ -96,6 +110,13 @@ export default function CheckoutPage() {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            {userProfile?.shipping_address && (
+              <div className="mb-4 p-4 bg-indigo-950/30 border border-indigo-800 rounded-lg">
+                <p className="text-sm text-indigo-300 mb-1">Shipping Address:</p>
+                <p className="text-white font-medium">{userProfile.shipping_address}</p>
+              </div>
+            )}
+
             <FormField
               control={form.control}
               name="credit_card_number"
@@ -119,40 +140,17 @@ export default function CheckoutPage() {
 
             <FormField
               control={form.control}
-              name="city"
+              name="expiration_date"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-indigo-200">City</FormLabel>
+                  <FormLabel className="text-indigo-200">Expiration Date (YYYY-MM)</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. Cairo" {...field} className="bg-indigo-950/30 border-indigo-800 text-white" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-indigo-200">Phone Number</FormLabel>
-                  <FormControl>
-                    <Input placeholder="01XXXXXXXXX" {...field} className="bg-indigo-950/30 border-indigo-800 text-white" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="details"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-indigo-200">Address Details</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Street name, Building number..." {...field} className="bg-indigo-950/30 border-indigo-800 text-white" />
+                    <Input 
+                      placeholder="2025-12" 
+                      {...field} 
+                      className="bg-indigo-950/30 border-indigo-800 text-white"
+                      maxLength={7}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

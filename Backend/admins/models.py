@@ -165,29 +165,42 @@ def get_sales_previous_month():
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
+    # Match the stored procedure from reports.sql
     cursor.execute("""
-        SELECT SUM(cost) AS total_sales
+        SELECT SUM(cost) AS Total_Sales
         FROM customer_order
         WHERE order_date >= DATE_FORMAT(NOW() - INTERVAL 1 MONTH, '%Y-%m-01') 
         AND order_date < DATE_FORMAT(NOW(), '%Y-%m-01')
     """)
-    return cursor.fetchone()
+    result = cursor.fetchone()
+    # Return with lowercase key for consistency, but also include Total_Sales
+    if result:
+        total_sales = result.get('Total_Sales') or result.get('total_sales') or 0
+        return {'Total_Sales': total_sales, 'total_sales': total_sales}
+    return {'Total_Sales': 0, 'total_sales': 0}
 
 def get_sales_by_date(target_date):
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
+    # Match the stored procedure from reports.sql
     cursor.execute("""
-        SELECT SUM(cost) AS total_sales
+        SELECT SUM(cost) AS Total_Sales
         FROM customer_order
         WHERE DATE(order_date) = %s
     """, (target_date,))
-    return cursor.fetchone()
+    result = cursor.fetchone()
+    # Return with lowercase key for consistency, but also include Total_Sales
+    if result:
+        total_sales = result.get('Total_Sales') or result.get('total_sales') or 0
+        return {'Total_Sales': total_sales, 'total_sales': total_sales}
+    return {'Total_Sales': 0, 'total_sales': 0}
 
 def get_top_5_customers():
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
+    # Match the stored procedure from reports.sql exactly
     cursor.execute("""
         SELECT first_name, last_name, SUM(cost) AS total_purchase_amount   
         FROM customer_order NATURAL JOIN user        
@@ -196,17 +209,24 @@ def get_top_5_customers():
         ORDER BY total_purchase_amount DESC        
         LIMIT 5
     """)
-    return cursor.fetchall()
+    results = cursor.fetchall()
+    # Ensure all results have proper values
+    for result in results:
+        if result.get('total_purchase_amount') is None:
+            result['total_purchase_amount'] = 0
+    return results
 
 def get_top_10_selling_books():
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
     cursor.execute("""
-        SELECT title, SUM(item_quantity) AS total_number_of_copies_sold
-        FROM book_order NATURAL JOIN book NATURAL JOIN customer_order
-        WHERE customer_order.order_date >= (CURRENT_DATE - INTERVAL 3 MONTH)
-        GROUP BY title
+        SELECT b.title, b.ISBN_number, SUM(bo.item_quantity) AS total_number_of_copies_sold
+        FROM book_order bo
+        JOIN book b ON bo.ISBN_number = b.ISBN_number
+        JOIN customer_order co ON bo.order_id = co.order_id
+        WHERE co.order_date >= (CURRENT_DATE - INTERVAL 3 MONTH)
+        GROUP BY b.ISBN_number, b.title
         ORDER BY total_number_of_copies_sold DESC
         LIMIT 10
     """)
@@ -216,12 +236,18 @@ def get_replenishment_history(isbn):
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
+    # First check if book exists
+    cursor.execute("SELECT ISBN_number FROM book WHERE ISBN_number = %s", (isbn,))
+    if not cursor.fetchone():
+        return None
+    
     cursor.execute("""
         SELECT COUNT(order_id) AS number_of_replenishments
         FROM publisher_order
         WHERE ISBN_number = %s
     """, (isbn,))
-    return cursor.fetchone()
+    result = cursor.fetchone()
+    return result or {'number_of_replenishments': 0}
 
 def get_all_customer_orders():
     db = get_db()

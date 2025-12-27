@@ -13,6 +13,8 @@ def get_books_page():
 
     books = cursor.fetchall()
     for book in books:
+        book["book_image"] = f"/images/{book['book_image']}"
+
         cursor.execute("SELECT author_name FROM author WHERE ISBN_number = %s", (book['ISBN_number'],))
         authors = cursor.fetchall()
         book["authors"] = [a["author_name"] for a in authors]
@@ -48,14 +50,69 @@ def book_search(isbn, title, category, author, publisher):
     books= cursor.fetchall()
 
     for book in books:
+        book["book_image"] = f"/images/{book['book_image']}"
         cursor.execute("SELECT author_name FROM author WHERE ISBN_number = %s", (book['ISBN_number'],))
         authors = cursor.fetchall()
         book["authors"] = [a["author_name"] for a in authors]
     return books
    
-def create_customer_order(username, credit_card, books):
+def get_book_details(isbn):
+    """Get detailed information about a single book by ISBN"""
     db = get_db()
     cursor = db.cursor(dictionary=True)
+    
+    query = """
+    SELECT DISTINCT B.ISBN_number, B.title, B.publication_year, B.quantity_stock, 
+           B.category, B.threshold, B.selling_price, B.book_image, P.name AS publisher_name, P.publisher_id
+    FROM book AS B 
+    LEFT JOIN publisher AS P ON (B.publisher_id = P.publisher_id)
+    WHERE B.ISBN_number = %s
+    """
+    
+    cursor.execute(query, (isbn,))
+    book = cursor.fetchone()
+    
+    if book:
+        cursor.execute("SELECT author_name FROM author WHERE ISBN_number = %s", (isbn,))
+        authors = cursor.fetchall()
+        book["authors"] = [a["author_name"] for a in authors]
+    
+    return book
+
+def create_customer_order(username, credit_card, books, expiration_date=None):
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+
+    # Validate credit card exists and check expiration
+    cursor.execute("""
+        SELECT expiration_date FROM credit_card WHERE credit_card_number = %s
+    """, (credit_card,))
+    card_info = cursor.fetchone()
+    
+    if not card_info:
+        # Create credit card entry if it doesn't exist
+        if not expiration_date:
+            raise ValueError("Credit card not found. Please provide expiration date.")
+        # Parse expiration date (format: YYYY-MM)
+        from datetime import datetime
+        try:
+            exp_date = datetime.strptime(expiration_date + "-01", '%Y-%m-%d').date()
+        except ValueError:
+            raise ValueError("Invalid expiration date format. Use YYYY-MM")
+        cursor.execute("""
+            INSERT INTO credit_card (credit_card_number, expiration_date) 
+            VALUES (%s, %s)
+        """, (credit_card, exp_date))
+    else:
+        # Check if card is expired
+        from datetime import datetime
+        exp_date = card_info['expiration_date']
+        if isinstance(exp_date, str):
+            exp_date = datetime.strptime(exp_date, '%Y-%m-%d').date()
+        elif hasattr(exp_date, 'date'):
+            exp_date = exp_date.date()
+        if exp_date < datetime.now().date():
+            raise ValueError("Credit card has expired")
 
     cursor.execute("INSERT INTO customer_order (credit_card_number, username) VALUES (%s, %s)", (credit_card, username))
     order_id = cursor.lastrowid
@@ -64,12 +121,16 @@ def create_customer_order(username, credit_card, books):
     for book in books:
         isbn = book.get("ISBN_number")
         quantity = book.get("quantity")
-        cursor.execute("SELECT selling_price FROM book WHERE ISBN_number = %s", (isbn,))
+        cursor.execute("SELECT selling_price, quantity_stock FROM book WHERE ISBN_number = %s", (isbn,))
         price_result = cursor.fetchone()
         if not price_result:
             raise ValueError(f"Book with ISBN {isbn} not found")
+        if price_result['quantity_stock'] < quantity:
+            raise ValueError(f"Insufficient stock for book {isbn}")
         unit_price = float(price_result['selling_price'])
         cursor.execute("INSERT INTO book_order (order_id, ISBN_number, item_quantity, unit_price) VALUES (%s, %s, %s, %s)", (order_id, isbn, quantity, unit_price))
+        # Update stock
+        cursor.execute("UPDATE book SET quantity_stock = quantity_stock - %s WHERE ISBN_number = %s", (quantity, isbn))
         total_cost += unit_price * quantity
 
     cursor.execute("UPDATE customer_order SET cost = %s WHERE order_id = %s", (total_cost, order_id))

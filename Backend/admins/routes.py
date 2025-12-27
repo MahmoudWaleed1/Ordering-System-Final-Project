@@ -212,5 +212,7 @@ def report_top_books():
 def report_replenishment_history(isbn):
     """Get replenishment history for a specific book"""
     result = get_replenishment_history(isbn)
+    if result is None:
+        return jsonify({"msg": "Book not found"}), HTTP_404_NOT_FOUND
     return jsonify(result), HTTP_200_OK
 

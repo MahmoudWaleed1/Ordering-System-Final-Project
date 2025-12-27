@@ -2,10 +2,15 @@ import { Book } from "@/interfaces/book";
 
 const formatImagePath = (imagePath: string) => {
     if (!imagePath) return "/placeholder-book.jpg"; // Default if missing
-    if (imagePath.startsWith('http') || imagePath.startsWith('/')) {
+    if (imagePath.startsWith('http')) {
         return imagePath;
     }
-    return `/${imagePath}`; // Adds the leading slash required by Next.js
+    // If it's a relative path starting with /, use it as-is (backend already formats it)
+    if (imagePath.startsWith('/')) {
+        return `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"}${imagePath}`;
+    }
+    // If it doesn't start with /, assume it's a filename - use /images/ path
+    return `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"}/images/${imagePath}`;
 };
 
 class ApiService {
@@ -164,15 +169,19 @@ class ApiService {
         }
     }
 
-    async createOrder(books: Array<{ISBN_number: string, quantity: number}>, creditCardNumber: string, token: string) {
+    async createOrder(books: Array<{ISBN_number: string, quantity: number}>, creditCardNumber: string, token: string, expirationDate?: string) {
         try {
+            const body: any = {
+                books,
+                credit_card_number: creditCardNumber
+            };
+            if (expirationDate) {
+                body.expiration_date = expirationDate;
+            }
             const response = await fetch(`${this.#baseUrl}/api/books/orders`, {
                 method: "POST",
                 headers: this.#getAuthHeaders(token),
-                body: JSON.stringify({
-                    books,
-                    credit_card_number: creditCardNumber
-                })
+                body: JSON.stringify(body)
             });
             const data = await response.json();
             return { ok: response.ok, data };
@@ -291,9 +300,12 @@ class ApiService {
 
     async getSalesReport(token: string, type: "previous-month" | "by-date", date?: string) {
         try {
-            const url = date 
-                ? `${this.#baseUrl}/api/admins/reports/sales/by-date?date=${date}`
-                : `${this.#baseUrl}/api/admins/reports/sales/previous-month`;
+            let url: string;
+            if (type === "by-date" && date) {
+                url = `${this.#baseUrl}/api/admins/reports/sales/by-date?date=${date}`;
+            } else {
+                url = `${this.#baseUrl}/api/admins/reports/sales/previous-month`;
+            }
             const response = await fetch(url, {
                 method: "GET",
                 headers: this.#getAuthHeaders(token)
@@ -328,6 +340,32 @@ class ApiService {
             return { ok: response.ok, data };
         } catch (error) {
             return { ok: false, data: [] };
+        }
+    }
+
+    async getPublishers(token: string) {
+        try {
+            const response = await fetch(`${this.#baseUrl}/api/admins/publishers`, {
+                method: "GET",
+                headers: this.#getAuthHeaders(token)
+            });
+            const data = await response.json();
+            return { ok: response.ok, data };
+        } catch (error) {
+            return { ok: false, data: [] };
+        }
+    }
+
+    async getReplenishmentHistory(token: string, isbn: string) {
+        try {
+            const response = await fetch(`${this.#baseUrl}/api/admins/reports/replenishment-history/${isbn}`, {
+                method: "GET",
+                headers: this.#getAuthHeaders(token)
+            });
+            const data = await response.json();
+            return { ok: response.ok, data };
+        } catch (error) {
+            return { ok: false, data: null };
         }
     }
 }

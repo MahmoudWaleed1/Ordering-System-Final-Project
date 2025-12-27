@@ -48,17 +48,32 @@ def update_user_by_username(username, update_data):
     
     return cursor.rowcount > 0
 
-def get_user_orders(username):
+def get_user_orders(username, status=None, start_date=None, end_date=None):
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
-    # First get all orders
-    cursor.execute("""
-        SELECT order_id, order_date, cost AS total_cost
-        FROM customer_order
-        WHERE username = %s
-        ORDER BY order_date DESC
-    """, (username,))
+    # Build query with optional filters
+    query = """
+        SELECT co.order_id, co.order_date, co.cost AS total_cost
+        FROM customer_order co
+        WHERE co.username = %s
+    """
+    params = [username]
+    
+    # Note: status filter would require adding a status column to customer_order table
+    # For now, we'll skip it as it's not in the schema
+    
+    if start_date:
+        query += " AND DATE(co.order_date) >= %s"
+        params.append(start_date)
+    
+    if end_date:
+        query += " AND DATE(co.order_date) <= %s"
+        params.append(end_date)
+    
+    query += " ORDER BY co.order_date DESC"
+    
+    cursor.execute(query, params)
     orders = cursor.fetchall()
     
     # Then get books for each order
