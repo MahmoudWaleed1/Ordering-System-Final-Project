@@ -75,7 +75,7 @@ CREATE TABLE publisher_order (
 CREATE TABLE customer_order (
     order_id INT NOT NULL AUTO_INCREMENT,
     order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    cost DECIMAL(10, 2) NOT NULL,
+    cost DECIMAL(10, 2),
     credit_card_number VARCHAR(20),
     username VARCHAR(225),
     FOREIGN KEY (username) REFERENCES user(username) ON DELETE SET NULL ON UPDATE CASCADE,

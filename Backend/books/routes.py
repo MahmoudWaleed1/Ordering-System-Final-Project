@@ -10,21 +10,10 @@ import bcrypt
 
 @books_bp.route("/", methods=["GET"])
 def get_books():
-    page = int(request.args.get("page", 1))
-    limit = int(request.args.get("limit", 30))
-
-    offset = (page - 1) * limit
-
     
-    books = get_books_page(limit, offset)
+    books = get_books_page()
 
-    return jsonify({
-        "data": books,
-        "pagination": {
-            "page": page,
-            "limit": limit
-        }
-    })
+    return jsonify(books)
 
 @books_bp.route("/search", methods=["GET"])
 def search_for_books():
@@ -38,4 +27,22 @@ def search_for_books():
 
     return jsonify(books)
 
+@books_bp.route("/orders", methods=["POST"])
+@jwt_required()
+def order_books():
+    username = get_jwt_identity()
+    data = request.get_json()
 
+    books = data.get("books")
+    credit_card = data.get("credit_card_number")
+
+
+    if not books or not isinstance(books, list) or not credit_card:
+        return jsonify({"msg": "Missing Arguments"}), HTTP_400_BAD_REQUEST
+
+    try:
+        order_id = create_customer_order(username, credit_card, books)
+    except IntegrityError:
+        return jsonify({"msg": "Invalid Input"}), HTTP_400_BAD_REQUEST
+
+    return jsonify({"msg": "Order placed successfully", "order_id": order_id}), 201
