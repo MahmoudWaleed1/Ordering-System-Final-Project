@@ -1,4 +1,4 @@
-import { use } from "react";
+import { Book } from "@/interfaces/book";
 
 class ApiService {
     #baseUrl: string = "http://localhost:5000/";
@@ -38,8 +38,21 @@ class ApiService {
     console.log("⬅️ Login status:", res.status, "Response:", data);
     return { status: res.status, ...data };
   });
+
+  
 }
+   async getAllBooks(): Promise<Book[]> {
+        return await fetch(
+            this.#baseUrl + "/api/users/books"
+        ).then((res) => res.json());
+    }
+
+      async getBookDetails(isbn: string): Promise<Book> {
+        return await fetch(this.#baseUrl + "/api/users/books/" + isbn).then((res) => res.json());
+    }
 }
+
+
 
 
 

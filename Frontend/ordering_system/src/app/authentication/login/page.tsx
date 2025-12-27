@@ -20,7 +20,7 @@ import Link from "next/link";
 
 // Zod schema for login
 const loginSchema = z.object({
-  email: z.string().nonempty("Email is required").email("Invalid email format"),
+  username: z.string().nonempty("Username is required"),
   password: z
     .string()
     .nonempty("Password is required")
@@ -35,7 +35,7 @@ export default function LoginPage() {
     const form = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-        email: "",
+        username: "",
         password: "",
     },
     });
@@ -55,7 +55,7 @@ export default function LoginPage() {
     setErrorMessage("");
     try {
       const response = await signIn("credentials", {
-        email: values.email,
+        username: values.username,
         password: values.password,
         redirect: false,
       });
@@ -64,7 +64,7 @@ export default function LoginPage() {
         sessionStorage.setItem("isLoggedIn", "true");
         router.push(lastPage);
       } else {
-        setErrorMessage("Invalid email or password");
+        setErrorMessage("Invalid username or password");
       }
     } catch {
       setErrorMessage("Something went wrong. Please try again.");
@@ -85,14 +85,14 @@ export default function LoginPage() {
             {/* Email */}
             <FormField
               control={form.control}
-              name="email"
+              name="username"
               render={({ field, fieldState }) => (
                 <FormItem>
-                  <FormLabel className="text-sm text-indigo-300">Email</FormLabel>
+                  <FormLabel className="text-sm text-indigo-300">Username</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
-                      type="email"
+                      type="text"
                       placeholder="you@example.com"
                       className="
                         bg-[#020617]
