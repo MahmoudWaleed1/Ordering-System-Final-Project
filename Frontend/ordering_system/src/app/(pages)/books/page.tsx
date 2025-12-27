@@ -22,12 +22,17 @@ import { formatPrice } from "@/helpers/currency";
 import { apiService } from "@/services/api";
 import toast from "react-hot-toast";
 
-export default function ProductDetailPage() {
+export default function BooksPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [filteredBooks, setFilteredBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchParams, setSearchParams] = useState({
+    isbn: "",
+    title: "",
+    category: "",
+    publisher: "",
+  });
 
   async function getBooks() {
     try {
@@ -48,26 +53,44 @@ export default function ProductDetailPage() {
     getBooks();
   }, []);
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-
-    if (!query.trim()) {
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Check if any search parameter is filled
+    const hasSearchParams = Object.values(searchParams).some(v => v !== "");
+    
+    if (!hasSearchParams) {
+      // If no search params, show all books
       setFilteredBooks(books);
       return;
     }
 
-    const lowercaseQuery = query.toLowerCase();
-    const filtered = books.filter((book) => {
-      const titleMatch = book.title.toLowerCase().includes(lowercaseQuery);
-      const isbnMatch = book.isbn.toLowerCase().includes(lowercaseQuery);
-      return titleMatch || isbnMatch;
-    });
-
-    setFilteredBooks(filtered);
+    try {
+      setLoading(true);
+      
+      // Send search request to backend
+      const results = await apiService.searchBooks(searchParams);
+      
+      setFilteredBooks(results);
+      
+    //   if (results.length === 0) {
+    //     toast.info("No books found matching your search");
+    //   }
+    } catch (err: any) {
+      console.error("Search error:", err);
+      toast.error("Search failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const clearSearch = () => {
-    setSearchQuery("");
+    setSearchParams({
+      isbn: "",
+      title: "",
+      category: "",
+      publisher: "",
+    });
     setFilteredBooks(books);
   };
 
@@ -78,27 +101,55 @@ export default function ProductDetailPage() {
         <h1 className="text-4xl font-bold mb-4 text-center">All Books</h1>
       </div>
 
-      {/* Search Bar - Always visible */}
-      <div className="flex justify-center mb-8">
-        <div className="relative w-full max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+      {/* Search Form */}
+      <form onSubmit={handleSearch} className="mb-8 p-6 bg-gray-50 rounded-lg border">
+        <h3 className="text-lg font-semibold mb-4">Search Books</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <input
             type="text"
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-            placeholder="Search by title or ISBN..."
-            className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            placeholder="ISBN"
+            value={searchParams.isbn}
+            onChange={(e) => setSearchParams({ ...searchParams, isbn: e.target.value })}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
           />
-          {searchQuery && (
-            <button
-              onClick={clearSearch}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          )}
+          <input
+            type="text"
+            placeholder="Title"
+            value={searchParams.title}
+            onChange={(e) => setSearchParams({ ...searchParams, title: e.target.value })}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+          <select
+            value={searchParams.category}
+            onChange={(e) => setSearchParams({ ...searchParams, category: e.target.value })}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="">All Categories</option>
+            <option value="Science">Science</option>
+            <option value="Art">Art</option>
+            <option value="Religion">Religion</option>
+            <option value="History">History</option>
+            <option value="Geography">Geography</option>
+          </select>
+          <input
+            type="text"
+            placeholder="Publisher"
+            value={searchParams.publisher}
+            onChange={(e) => setSearchParams({ ...searchParams, publisher: e.target.value })}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          />
         </div>
-      </div>
+        <div className="flex gap-3 mt-4">
+          <Button type="submit" className="flex-1">
+            <Search className="h-4 w-4 mr-2" />
+            Search
+          </Button>
+          <Button type="button" variant="outline" onClick={clearSearch}>
+            <X className="h-4 w-4 mr-2" />
+            Clear
+          </Button>
+        </div>
+      </form>
 
       {/* Loading State */}
       {loading && (
@@ -116,7 +167,7 @@ export default function ProductDetailPage() {
       )}
 
       {/* Results count */}
-      {!loading && !error && searchQuery && (
+      {!loading && !error && Object.values(searchParams).some(v => v !== "") && (
         <div className="mb-4 text-center text-muted-foreground">
           Found {filteredBooks.length}{" "}
           {filteredBooks.length === 1 ? "book" : "books"}

@@ -42,12 +42,17 @@ export default function LoginPage() {
 
   const router = useRouter();
   const [signingIn, setSigningIn] = useState(false);
-  const [lastPage, setLastPage] = useState("/");
+  const [lastPage, setLastPage] = useState("/books"); // Changed default to /books
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     const stored = sessionStorage.getItem("lastPage");
-    if (stored && stored !== "/auth/login") setLastPage(stored);
+    // If there's a stored page and it's not the login page, use it; otherwise use /books
+    if (stored && stored !== "/auth/login") {
+      setLastPage(stored);
+    } else {
+      setLastPage("/books");
+    }
   }, []);
 
   const onSubmit = async (values: any) => {
@@ -62,7 +67,7 @@ export default function LoginPage() {
 
       if (response?.ok) {
         sessionStorage.setItem("isLoggedIn", "true");
-        router.push(lastPage);
+        router.push(lastPage); // Will redirect to /books or the last visited page
       } else {
         setErrorMessage("Invalid username or password");
       }
@@ -82,7 +87,7 @@ export default function LoginPage() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             
-            {/* Email */}
+            {/* Username */}
             <FormField
               control={form.control}
               name="username"
@@ -93,7 +98,7 @@ export default function LoginPage() {
                     <Input
                       {...field}
                       type="text"
-                      placeholder="you@example.com"
+                      placeholder="username"
                       className="
                         bg-[#020617]
                         border border-indigo-800
