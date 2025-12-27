@@ -95,30 +95,38 @@ class ApiService {
         publisher?: string;
         author?: string;
     }): Promise<Book[]> {
-        const params = new URLSearchParams();
-        if (searchParams.isbn) params.append('isbn', searchParams.isbn);
-        if (searchParams.title) params.append('title', searchParams.title);
-        if (searchParams.category) params.append('category', searchParams.category);
-        if (searchParams.publisher) params.append('publisher', searchParams.publisher);
-        if (searchParams.author) params.append('author', searchParams.author);
+        try {
+            const params = new URLSearchParams();
+            if (searchParams.isbn) params.append('isbn', searchParams.isbn);
+            if (searchParams.title) params.append('title', searchParams.title);
+            if (searchParams.category) params.append('category', searchParams.category);
+            if (searchParams.publisher) params.append('publisher', searchParams.publisher);
+            if (searchParams.author) params.append('author', searchParams.author);
 
-        const url = `${this.#baseUrl}/api/books/search?${params.toString()}`;
-        const response = await fetch(url);
-        const books = await response.json();
-        // Transform backend response to frontend format
-        return books.map((book: any) => ({
-            isbn: book.ISBN_number,
-            title: book.title,
-            quantity: book.quantity_stock,
-            price: parseFloat(book.selling_price),
-            publicationYear: book.publication_year,
-            publisher: book.name || book.publisher_name || "",
-            image: formatImagePath(book.book_image),
-            category: book.category,
-            authors: book.authors || [],
-            createdAt: "",
-            updatedAt: "",
-        }));
+            const url = `${this.#baseUrl}/api/books/search?${params.toString()}`;
+            const response = await fetch(url);
+
+            if (!response.ok) return []; // Return empty list if server errors out
+
+            const books = await response.json();
+            // Transform backend response to frontend format
+            return books.map((book: any) => ({
+                isbn: book.ISBN_number,
+                title: book.title,
+                quantity: book.quantity_stock,
+                price: parseFloat(book.selling_price),
+                publicationYear: book.publication_year,
+                publisher: book.name || book.publisher_name || "",
+                image: formatImagePath(book.book_image),
+                category: book.category,
+                authors: book.authors || [],
+                createdAt: "",
+                updatedAt: "",
+            }));
+        } catch (error) {
+            console.error("Search failed:", error);
+            return []; // Prevents the frontend from crashing
+        }
     }
 
     // Helper for Auth Headers

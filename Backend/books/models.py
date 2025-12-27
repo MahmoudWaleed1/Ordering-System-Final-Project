@@ -29,7 +29,7 @@ def book_search(isbn, title, category, author, publisher):
     params = []
     
     if isbn:
-        query += " AND ISBN_number = %s"
+        query += " AND B.ISBN_number = %s"
         params.append(isbn)
     if title:
         query += " AND title LIKE %s"
