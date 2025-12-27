@@ -8,19 +8,15 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from mysql.connector import IntegrityError
 import bcrypt
 
-@app.route("/api/books", methods=["GET"])
+@books_bp.route("/", methods=["GET"])
 def get_books():
     page = int(request.args.get("page", 1))
     limit = int(request.args.get("limit", 30))
-    search = request.args.get("search")
-    category = request.args.get("category")
-    min_price = request.args.get("min_price")
-    max_price = request.args.get("max_price")
 
     offset = (page - 1) * limit
 
     
-    books = get_books_model(limit, offset, search, category, min_price, max_price)
+    books = get_books_page(limit, offset)
 
     return jsonify({
         "data": books,
@@ -30,11 +26,16 @@ def get_books():
         }
     })
 
-@app.route("/api/books/<int:book_id>", methods=["GET"])
-def get_book(book_id):
-    book = get_book_by_id(book_id)
+@books_bp.route("/search", methods=["GET"])
+def search_for_books():
+    title = request.args.get("title")
+    isbn = request.args.get("isbn")
+    category = request.args.get("category")
+    author = request.args.get("author")
+    publisher = request.args.get("publisher")
 
-    if not book:
-        return jsonify({"error": "Book not found"}), 404
+    books = book_search(isbn, title, category, author, publisher)
 
-    return jsonify(book)
+    return jsonify(books)
+
+
